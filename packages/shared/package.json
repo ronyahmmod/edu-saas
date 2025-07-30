@@ -1,0 +1,5 @@
+{
+  "name": "@edu-saas/shared",
+  "version": "1.0.0",
+  "main": "constants.js"
+}
