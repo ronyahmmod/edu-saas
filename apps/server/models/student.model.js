@@ -4,6 +4,10 @@ const studentSchema = new mongoose.Schema({
   email: String,
   phone: String,
   profilePic: String,
+  session: String,
+  classRoll: String,
+  group: String,
+  documents: [{ url: String, name: String, format: String }],
   createdAt: { type: Date, default: Date.now },
 });
 
