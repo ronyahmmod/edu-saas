@@ -5,6 +5,8 @@ import cors from "cors";
 import { connectDB } from "./config/db.js";
 import globalErrorHandler from "./middlewares/globalErrorHandler.js";
 import studentRoutes from "./routes/student.routes.js";
+import authRoutes from "./routes/auth.routes.js";
+import tenantRouts from "./routes/tenant.routes.js";
 
 dotenv.config();
 connectDB();
@@ -15,6 +17,8 @@ app.use(express.json()); // to get request body object as json style
 
 // Defining routing path
 app.use("/api/students", studentRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/tenants", tenantRouts);
 
 // Handle 404 Routes
 app.use((req, res, next) => {

@@ -14,8 +14,7 @@ const userSchema = new Schema({
 
   role: {
     type: String,
-    enum: ["admin", "student", "teacher", "accountant"],
-    default: "student",
+    required: true,
   },
 
   linkedProfile: {

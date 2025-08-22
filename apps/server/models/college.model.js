@@ -9,7 +9,7 @@ const collegeSchema = new Schema({
   email: { type: String, required: true, unique: true, trim: true },
   phone: { type: String, required: true, unique: true, trim: true },
   website: { type: String },
-  logoUrl: { type: String },
+  logo: { url: { type: String }, publicId: { type: String } },
   address: {
     village: String,
     postOffice: String,
