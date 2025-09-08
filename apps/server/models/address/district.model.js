@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import { Schema } from "mongoose";
 
 const districtSchema = new Schema({
-  name: { type: String, required: true },
+  name: { type: String, required: true, unique: true },
   division: { type: Schema.Types.ObjectId, ref: "Division" },
 });
 

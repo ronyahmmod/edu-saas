@@ -11,7 +11,7 @@ const getNtpTime = () => {
   });
 };
 
-export default ntpTimestampMiddleware = async (req, res, next) => {
+const ntpTimestampMiddleware = async (req, res, next) => {
   try {
     const ntpTime = await getNtpTime();
     req.ntpTime = ntpTime;
@@ -22,3 +22,5 @@ export default ntpTimestampMiddleware = async (req, res, next) => {
     next();
   }
 };
+
+export default ntpTimestampMiddleware;

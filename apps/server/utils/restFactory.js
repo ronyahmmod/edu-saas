@@ -11,10 +11,15 @@ export const restFactory = (Model, bodyValidator, options = {}) => {
 
   // CREATE
   const createOne = catchAsync(async (req, res, next) => {
-    const parsed = bodyValidator.safeParse(req.body);
-    if (!parsed.success) {
-      throw parsed.error;
+    let parsed = {};
+    if (bodyValidator) {
+      parsed = bodyValidator.safeParse(req.body);
+      if (!parsed.success) {
+        throw parsed.error;
+      }
     }
+    parsed.data = req.body;
+    // console.log(parsed.data);
     const doc = await Model.create(parsed.data);
     res.status(StatusCodes.CREATED).json({ success: true, data: doc });
   });
@@ -90,10 +95,14 @@ export const restFactory = (Model, bodyValidator, options = {}) => {
   // FULL UPDATE (PUT-Like)
 
   const updateOne = catchAsync(async (req, res, next) => {
-    const parsed = bodyValidator.safeParse(req.body);
-    if (!parsed.success) {
-      throw parsed.error;
+    let parsed;
+    if (bodyValidator) {
+      parsed = bodyValidator.safeParse(req.body);
+      if (!parsed.success) {
+        throw parsed.error;
+      }
     }
+    parsed.data = req.body;
     const doc = await Model.findByIdAndUpdate(req.params.id, parsed.data, {
       new: true,
       runValidators: true,
@@ -136,5 +145,38 @@ export const restFactory = (Model, bodyValidator, options = {}) => {
       .json({ success: true, message: "Deleted Successfully" });
   });
 
-  return { createOne, deleteOne, getOne, updateOne, patchOne, getAll };
+  // Delete permanently
+  const deletePermanently = catchAsync(async (req, res, next) => {
+    const doc = await Model.findById(req.params.id);
+    if (!doc) {
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ success: false, message: "Not Found" });
+    }
+    await Model.findByIdAndDelete(req.params.id);
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: "This document permanently deleted successfully",
+    });
+  });
+
+  // Delete all
+  const deletePermanentlyALL = catchAsync(async (req, res, next) => {
+    await Model.deleteMany({});
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: "Delete all data of this table successfully",
+    });
+  });
+
+  return {
+    createOne,
+    deleteOne,
+    getOne,
+    updateOne,
+    patchOne,
+    getAll,
+    deletePermanently,
+    deletePermanentlyALL,
+  };
 };

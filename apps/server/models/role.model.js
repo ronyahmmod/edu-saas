@@ -3,7 +3,7 @@ import { Schema } from "mongoose";
 
 const roleSchema = new Schema(
   {
-    name: { type: String, required: true, unique: true },
+    type: { type: String, required: true },
     permissions: [{ type: String }],
   },
   { timestamps: true }

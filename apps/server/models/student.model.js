@@ -20,7 +20,7 @@ const studentSchema = new Schema({
   tenant: { type: Schema.Types.ObjectId, ref: "College", required: true },
 
   studentId: { type: String, required: true, unique: true },
-
+  user: { type: Schema.Types.ObjectId, ref: "User" },
   name: {
     first: { type: String, required: true },
     last: { type: String },
@@ -86,7 +86,7 @@ const studentSchema = new Schema({
       enum: ["Science", "Commerce", "Humanities"],
       required: true,
     },
-    roll: { type: String, required: true },
+    roll: { type: String, required: false },
     registrationNo: { type: String },
     departmentId: {
       type: Schema.Types.ObjectId,
