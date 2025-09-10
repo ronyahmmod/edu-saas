@@ -4,7 +4,7 @@ import crypto from "crypto";
 import { StatusCodes } from "http-status-codes";
 import Student from "../models/student.model.js";
 import Role from "../models/role.model.js";
-
+import AuditLog from "../models/auditLog.model.js";
 import User from "../models/user.model.js";
 import catchAsync from "../utils/catchAsync.js";
 import { createAuthSchema } from "../validation/auth.validation.js";
@@ -16,6 +16,21 @@ import { otpEmailTemplate } from "../utils/otpEmail.js";
 const createAndSendToken = (user, statusCode, res) => {
   const token = singToken(user._id);
   user.password = undefined;
+  const cookieOptions = {
+    httpOnly: true,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  };
+
+  if (process.env.NODE_ENV === "production") {
+    cookieOptions.secure = true;
+    cookieOptions.sameSite = "none";
+  } else {
+    cookieOptions.secure = false;
+    cookieOptions.sameSite = "lax";
+  }
+  console.log("cooke");
+  res.cookie("jwt", token, cookieOptions);
+
   res.status(statusCode).json({ status: "success", token, data: { user } });
 };
 
@@ -87,7 +102,8 @@ export const login = catchAsync(async (req, res, next) => {
     );
   }
   const user = await User.findOne({ phone }).select("+passwordHash");
-  if (!user || !(await user.verifyPassword(password))) {
+  const valid = await user.verifyPassword(password);
+  if (!user || !valid) {
     return next(
       new AppError(
         "Incorrect mobile number or password",
@@ -95,8 +111,34 @@ export const login = catchAsync(async (req, res, next) => {
       )
     );
   }
-  const token = singToken(user._id);
-  res.status(StatusCodes.OK).json({ status: "success", token });
+  if (user.isLocked()) {
+    return next(
+      new AppError("Account is locked. Try later.", StatusCodes.FORBIDDEN)
+    );
+  }
+  if (!valid) {
+    user.loginAttempts += 1;
+    if (user.loginAttempts >= 5) user.lockUntil = Date.now() + 15 * 60 * 1000;
+    await user.save();
+    await AuditLog.create({
+      user: user._id,
+      action: "LOGIN FAILED",
+      ip: req.ip,
+      userAgent: req.headers["user-agent"],
+    });
+    return next(new AppError("Invalid credentials", StatusCodes.UNAUTHORIZED));
+  }
+  user.loginAttempts = 0;
+  user.lockUntil = null;
+  await user.save();
+  user.passwordHash = undefined;
+  const token = createAndSendToken(user, StatusCodes.OK, res);
+  await AuditLog.create({
+    user: user._id,
+    action: "LOGIN SUCCESSFUL",
+    ip: req.ip,
+    userAgent: req.headers["user-agent"],
+  });
 });
 
 export const registerAdmin = registerByRole("admin");
@@ -200,3 +242,41 @@ export const changePassword = catchAsync(async (req, res, next) => {
     .status(StatusCodes.OK)
     .json({ status: "success", message: "Password updated successfully" });
 });
+
+export const getMe = catchAsync(async (req, res, next) => {
+  let token;
+  console.log(req.cookies);
+
+  // From cookie or Authorization header
+  if (req.cookies?.jwt) {
+    token = req.cookies.jwt;
+  } else if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer")
+  ) {
+    token = req.headers.authorization.split(" ")[1];
+  }
+  if (!token) {
+    return next(new AppError("Not logged in", StatusCodes.UNAUTHORIZED));
+  }
+  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  const user = await User.findById(decoded.id);
+  if (!user) return next(new AppError("User not found", StatusCodes.NOT_FOUND));
+  res.status(StatusCodes.OK).json({
+    status: "success",
+    data: user,
+  });
+});
+
+export const logout = (req, res) => {
+  res.clearCookie("jwt", {
+    httpOnly: true,
+    sameSite: "None",
+    secure: process.env.NODE_ENV === "production",
+  });
+
+  res.status(200).json({
+    status: "success",
+    message: "Logged out successfully",
+  });
+};

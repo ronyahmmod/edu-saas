@@ -14,7 +14,10 @@ const getNtpTime = () => {
 const ntpTimestampMiddleware = async (req, res, next) => {
   try {
     const ntpTime = await getNtpTime();
-    req.ntpTime = ntpTime;
+    req.rawNtpTime = ntpTime;
+    req.localNtpTime = ntpTime.toLocaleString("en-BD", {
+      timeZone: "Asia/Dhaka",
+    });
     next();
   } catch (error) {
     console.error("NTP Error: ", error);

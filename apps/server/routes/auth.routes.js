@@ -1,7 +1,9 @@
 import express from "express";
 import {
   changePassword,
+  getMe,
   login,
+  logout,
   register,
   registerAdmin,
   registerPrincipal,
@@ -19,6 +21,7 @@ router.post("/forgot-password", sendPasswordResetOTP);
 router.post("/validate-otp", validateOTP);
 router.post("/reset-password", resetPassword);
 router.post("/register/super-admin", registerSuperAdmin);
+
 router.post(
   "/register/admin",
   protect,
@@ -37,7 +40,8 @@ router.post(
   restrictTo("admin", "super-admin", "principal"),
   registerTeacher
 );
-
+router.post("/logout", protect, logout);
+router.get("/me", getMe);
 router.post("/change-password", protect, changePassword);
 
 router.post("/login", login);
